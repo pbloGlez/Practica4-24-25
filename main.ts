@@ -165,7 +165,8 @@ const handler = async(req: Request): Promise<Response> => {
       const userDel = await userCollection.deleteOne({ _id : new ObjectId(id)});
       if(userDel.deletedCount === 0) return new Response("User not found", {status : 404});
 
-      return new Response("Tarea eliminada correctamente", {status : 200});
+      return new Response("User deleted successfully", {status : 200});
+      
     }else if(path === "/projects"){
       const id = url.searchParams.get("id");
       if(!id) return new Response("Bad request", {status: 400});
@@ -174,6 +175,7 @@ const handler = async(req: Request): Promise<Response> => {
       if(deletedProject.deletedCount === 0 ) return new Response("Project not found", {status : 404});
 
       return new Response("Project deleted successfully", {status : 200});
+      
     }else if(path === "/tasks"){
       const id = url.searchParams.get("id");
       if(!id) return new Response("Bad request",{status: 400});

@@ -4,8 +4,9 @@ import { fromModelToProject, fromModelToTask, fromModelToUser } from "./utils.ts
 
 const MONGO_URL = Deno.env.get("MONGO_URL");
 if(!MONGO_URL) {
-  console.error("MONGO_URL is not set");
-  Deno.exit(1);
+  throw new Error("Debes crear la variable de entorno MONGO_URL");
+
+  //Deno.exit(1);
 }
 
 const client = new MongoClient(MONGO_URL);
@@ -130,15 +131,59 @@ const handler = async(req: Request): Promise<Response> => {
         id: insertedId
       }),{status: 200});
 
+    }else if(path === "/task/move"){
+      const task = await req.json();
+      if(!task.task_id || !task.destination_project_id){
+        return new Response("Bad Request",{status : 400});
+      }
+      const idTask = await taskCollection.find({_id : task.task_id});
+      if(!idTask) return new Response("Task not found", {status : 404});
+      
+      const idProject = await projectCollection.find({_id : task.destination_project_id});
+      if(!idProject) return new Response("Project not found",{status: 404});
+
+      const { modifiedCount } = await taskCollection.updateOne(
+        {_id : new ObjectId(task.task_id as string)},
+        { $set : {project_id : task.destination_project_id}}
+      );
+      if(modifiedCount === 0) return new Response("Task not moved",{status: 400});
+
+      return new Response(JSON.stringify({
+        message : "Task moved correctly",
+        task : {
+          id: task.id,
+          title : task.title,
+          project_id : task.destination_project_id
+        }
+      }),{status : 200});
     }
+
   }else if(method === "DELETE"){
     if(path.startsWith("/users")){
-      const id = url.searchParams.get("url");
+      const id = url.searchParams.get("id");
       if(!id) return new Response("Bad request", {status : 400});
-      await userCollection.deleteOne({ _id : new ObjectId(id)});
-      return new Response(JSON.stringify("Tarea eliminada correctamente"));
+      const userDel = await userCollection.deleteOne({ _id : new ObjectId(id)});
+      if(userDel.deletedCount === 0) return new Response("User not found", {status : 404});
+
+      return new Response("Tarea eliminada correctamente", {status : 200});
+    }else if(path === "/projects"){
+      const id = url.searchParams.get("id");
+      if(!id) return new Response("Bad request", {status: 400});
+
+      const deletedProject = await projectCollection.deleteOne({_id : new ObjectId(id)});
+      if(deletedProject.deletedCount === 0 ) return new Response("Project not found", {status : 404});
+
+      return new Response("Project deleted successfully", {status : 200});
+    }else if(path === "/tasks"){
+      const id = url.searchParams.get("id");
+      if(!id) return new Response("Bad request",{status: 400});
+
+      const TaskDeleted = await taskCollection.deleteOne({_id : new ObjectId(id)});
+      if(TaskDeleted.deletedCount === 0) return new Response("Task not found", {status: 404});
+
+      return new Response("Task deleted successfully", {status : 200});
     }
   }
-  return new Response("endpoint not found", {status : 404});
-}
-Deno.serve({port: 8080}, handler);
+  return new Response("endpoint not found", {status: 404});
+  }
+  Deno.serve({port: 5000}, handler);

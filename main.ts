@@ -5,7 +5,7 @@ import { fromModelToProject, fromModelToTask, fromModelToUser } from "./utils.ts
 const MONGO_URL = Deno.env.get("MONGO_URL");
 if(!MONGO_URL) {
   throw new Error("Debes crear la variable de entorno MONGO_URL");
-
+//Cuando pruebo a integrar el deno deploy me salta un error con el Deno.exit
   //Deno.exit(1);
 }
 
